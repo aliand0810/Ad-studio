@@ -106,6 +106,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,78px));gap:6px;margin-top:10px}
 .thumb{position:relative;aspect-ratio:3/4;border-radius:6px;overflow:hidden;border:1px solid var(--border-2);background:#fff}
 .thumb img{width:100%;height:100%;object-fit:cover}
+.urlbox{display:flex;gap:6px;margin-top:10px}
+.urlbox input{font-size:12px}
+.thumb .src{position:absolute;left:3px;bottom:3px;font-family:var(--mono);font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(0,0,0,.7);color:var(--cyan)}
 .thumb button{position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;border:none;background:rgba(0,0,0,.75);color:#fff;font-size:10px;cursor:pointer}
 
 /* Styles */
@@ -163,6 +166,8 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .job{display:grid;grid-template-columns:44px 1fr;gap:10px;padding:10px;border:1px solid var(--border);border-radius:9px;background:var(--panel-2);margin-bottom:8px}
 .job img{width:44px;height:58px;object-fit:cover;border-radius:5px;background:#fff}
 .job .top{display:flex;align-items:center;gap:8px}
+.job .regen{padding:2px 7px;font-size:10.5px;display:none}
+.job.done .regen,.job.failed .regen{display:inline-flex}
 .job .nm{font-weight:600;font-size:12.5px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .badge{font-family:var(--mono);font-size:10.5px;padding:2px 7px;border-radius:5px;border:1px solid var(--border-2);color:var(--ink-2)}
 .badge.processing{color:var(--accent);border-color:rgba(255,107,53,.4);background:var(--accent-soft)}
@@ -212,7 +217,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   <div class="brand">
     <img src="icon.svg" alt="">
     <div class="brand-name">Ad Studio <span>Pro</span></div>
-    <div class="brand-ver">v2.1</div>
+    <div class="brand-ver">v2.2</div>
   </div>
   <div class="topaction">
     <button class="btn primary" id="btn-run" disabled>▶ Lancer la génération</button>
@@ -300,10 +305,15 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <div class="card-h"><span class="num">03</span><span class="t">Photos produit</span><span class="tag" id="tag-src">0 image</span><span class="chev">▼</span></div>
     <div class="card-b">
       <div class="drop" id="drop">
-        <input type="file" id="file" accept="image/*" multiple hidden>
+        <input type="file" id="file" accept="image/*,.heic,.avif,.svg" multiple hidden>
         <b>Déposer des images ou cliquer pour parcourir</b>
-        <span>JPG · PNG · WebP — une vidéo par image</span>
+        <span>Tous formats d'image — une vidéo par image</span>
       </div>
+      <div class="urlbox">
+        <input type="text" id="img-url" class="mono" placeholder="https://… lien d'une image (JPG, PNG, WebP, GIF, AVIF, SVG…)" spellcheck="false">
+        <button class="btn sm" id="img-url-add">Ajouter</button>
+      </div>
+      <div class="hint">Collez aussi un lien n'importe où dans l'application (Ctrl+V) ou glissez une image depuis une page web.</div>
       <div class="thumbs" id="thumbs"></div>
     </div>
   </section>
@@ -402,7 +412,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 (() => {
 'use strict';
 const $ = id => document.getElementById(id);
-const VERSION = "2.1.0";
+const VERSION = "2.2.0";
 
 /* ═════════ Stockage ═════════ */
 const LS = {
@@ -599,9 +609,72 @@ const drop = $('drop'), file = $('file');
 drop.addEventListener('click', () => file.click());
 drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
 drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
-drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('drag'); addFiles(e.dataTransfer.files); });
+drop.addEventListener('drop', e => {
+  e.preventDefault(); drop.classList.remove('drag');
+  if (e.dataTransfer.files.length) return addFiles(e.dataTransfer.files);
+  const u = extractUrl(e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain') || e.dataTransfer.getData('text/html'));
+  if (u) addUrl(u);
+});
 file.addEventListener('change', () => { addFiles(file.files); file.value = ''; });
-document.addEventListener('paste', e => { const f = [...(e.clipboardData?.files || [])]; if (f.length) addFiles(f); });
+document.addEventListener('paste', e => {
+  const f = [...(e.clipboardData?.files || [])];
+  if (f.length) { e.preventDefault(); return addFiles(f); }
+  const t = e.target;
+  if (t && (t.id === 'key-input' || t.id === 'prompt' || t.id === 'api-base')) return; // ne pas détourner ces champs
+  const u = extractUrl(e.clipboardData?.getData('text/html') || e.clipboardData?.getData('text/plain') || '');
+  if (u && t?.id !== 'img-url') { e.preventDefault(); addUrl(u); }
+});
+$('img-url-add').onclick = () => { const u = extractUrl($('img-url').value); if (!u) return toast('Lien invalide', 'err'); addUrl(u); };
+$('img-url').addEventListener('keydown', e => { if (e.key === 'Enter') $('img-url-add').click(); });
+
+/* Extrait une URL d'image depuis du texte ou du HTML (<img src>, lien, data:) */
+function extractUrl(txt) {
+  if (!txt) return null;
+  txt = txt.trim();
+  const m = txt.match(/<img[^>]+src=["']([^"']+)["']/i); if (m) return m[1];
+  if (/^data:image\//.test(txt)) return txt;
+  const u = txt.match(/https?:\/\/[^\s"'<>]+/i);
+  return u ? u[0] : null;
+}
+function loadImg(src, cors) {
+  return new Promise((res, rej) => { const i = new Image(); if (cors) i.crossOrigin = 'anonymous'; i.onload = () => res(i); i.onerror = () => rej(new Error('impossible de charger cette image')); i.src = src; });
+}
+function toJpeg(img, max = 1280) {
+  const r = Math.min(1, max / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
+  const w = Math.max(1, Math.round((img.naturalWidth || img.width) * r)), h = Math.max(1, Math.round((img.naturalHeight || img.height) * r));
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); x.drawImage(img, 0, 0, w, h);
+  return { dataUrl: c.toDataURL('image/jpeg', .9), w, h };
+}
+async function addUrl(url) {
+  const name = (url.startsWith('data:') ? 'image-collée' : decodeURIComponent(url.split(/[?#]/)[0].split('/').pop() || 'image-web')).slice(0, 60) || 'image-web';
+  $('img-url').value = '';
+  log('Chargement du lien : ' + (url.startsWith('data:') ? 'image intégrée' : url), 'd');
+  let entry = null;
+  // 1) Conversion locale si le site l'autorise (CORS) → JPEG optimisé
+  try {
+    const img = await loadImg(url, true);
+    entry = { name, url: url.startsWith('data:') ? null : url, ...toJpeg(img) };
+  } catch {}
+  // 2) Sinon : l'image est envoyée à Agnes par son lien public
+  if (!entry) {
+    try {
+      const img = await loadImg(url, false);
+      if (url.startsWith('data:')) throw new Error('image intégrée illisible');
+      entry = { name, url, dataUrl: null, w: img.naturalWidth, h: img.naturalHeight };
+      log(`[${name}] Le site bloque la copie locale : l'image sera transmise à Agnes par son lien`, 'w');
+    } catch (e) { log(`Lien refusé : ${e.message} (vérifiez qu'il pointe directement vers une image publique)`, 'e'); toast('Image introuvable à ce lien', 'err'); return; }
+  }
+  S.images.push({ id: crypto.randomUUID?.() || String(Math.random()), ...entry });
+  log(`Image ajoutée depuis un lien : ${name} (${entry.w}×${entry.h})`, 's');
+  paintThumbs();
+}
+const thumbOf = im => im.dataUrl || im.url;
+/* Source envoyée à l'API : lien public direct pour les formats standard, sinon JPEG converti */
+function apiSrc(im) {
+  if (im.url && (/\.(jpe?g|png|webp)(\?|#|$)/i.test(im.url) || !im.dataUrl)) return im.url;
+  return im.dataUrl || im.url;
+}
 
 function resize(f, max = 1280) {
   return new Promise((res, rej) => {
@@ -618,10 +691,10 @@ function resize(f, max = 1280) {
   });
 }
 async function addFiles(list) {
-  const fs = [...list].filter(f => f.type.startsWith('image/'));
+  const fs = [...list].filter(f => f.type.startsWith('image/') || /\.(jpe?g|png|webp|gif|avif|bmp|svg|ico|tiff?|heic)$/i.test(f.name));
   for (const f of fs) {
     try { const r = await resize(f); S.images.push({ id: crypto.randomUUID?.() || String(Math.random()), name: f.name, ...r }); log(`Image ajoutée : ${f.name} (${r.w}×${r.h})`); }
-    catch (e) { log(`${f.name} : ${e.message}`, 'e'); }
+    catch (e) { log(`${f.name} : ${e.message}${/heic|tiff?/i.test(f.name) ? ' — format non lisible par le navigateur, convertissez en JPG' : ''}`, 'e'); }
   }
   paintThumbs();
 }
@@ -630,7 +703,8 @@ function paintThumbs() {
   S.images.forEach(im => {
     const d = document.createElement('div'); d.className = 'thumb';
     d.innerHTML = '<img alt=""><button title="Retirer">✕</button>';
-    d.querySelector('img').src = im.dataUrl;
+    d.querySelector('img').src = thumbOf(im);
+    if (im.url) d.insertAdjacentHTML('beforeend', '<span class="src">LIEN</span>');
     d.querySelector('button').onclick = e => { e.stopPropagation(); S.images = S.images.filter(x => x.id !== im.id); paintThumbs(); };
     g.appendChild(d);
   });
@@ -719,9 +793,9 @@ const sleep = (ms, sig) => new Promise((res, rej) => {
 
 function bodyFor(model, img) {
   const secs = +$('duration').value;
-  if (model === M25) return { model, prompt: buildPrompt(), mode: 'keyframe', first_frame: img.dataUrl, seconds: String(Math.min(12, Math.max(4, secs))), size: '720P', aspect_ratio: '9:16', n: 1 };
+  if (model === M25) return { model, prompt: buildPrompt(), mode: 'keyframe', first_frame: apiSrc(img), seconds: String(Math.min(12, Math.max(4, secs))), size: '720P', aspect_ratio: '9:16', n: 1 };
   const frames = Math.min(441, Math.round((secs * 24 - 1) / 8) * 8 + 1);
-  return { model, prompt: buildPrompt(), image: img.dataUrl, width: 768, height: 1344, num_frames: frames, frame_rate: 24 };
+  return { model, prompt: buildPrompt(), image: apiSrc(img), width: 768, height: 1344, num_frames: frames, frame_rate: 24 };
 }
 
 function findUrl(o) {
@@ -852,8 +926,9 @@ function paintJobs() {
   if (!S.jobs.length) { box.innerHTML = '<div class="empty"><div class="ic">⧗</div>Aucune tâche. Ajoutez des photos puis lancez la génération.</div>'; return; }
   S.jobs.forEach(job => {
     const d = document.createElement('div');
-    d.innerHTML = '<img alt=""><div><div class="top"><span class="nm"></span><span class="badge"></span></div><div class="msg"></div><div class="meta"></div><div class="bar"><i></i></div></div>';
-    d.querySelector('img').src = job.img.dataUrl;
+    d.innerHTML = '<img alt=""><div><div class="top"><span class="nm"></span><button class="btn sm ghost regen" title="Relancer cette image">↻ Régénérer</button><span class="badge"></span></div><div class="msg"></div><div class="meta"></div><div class="bar"><i></i></div></div>';
+    d.querySelector('img').src = thumbOf(job.img);
+    d.querySelector('.regen').onclick = () => { if (S.running) return toast('Attendez la fin de la génération en cours', 'warn'); runBatch([job.img]); };
     d.querySelector('.nm').textContent = job.img.name;
     job.el = d; box.appendChild(d); setJob(job, job.status, job.msg, job.progress);
   });
@@ -882,9 +957,11 @@ function engine(state, text) {
   $('pill-engine-t').textContent = 'Moteur : ' + text;
 }
 
-$('btn-run').onclick = async () => {
-  if (S.running) return;
-  const batch = S.images.map(img => ({ img, status: 'pending', msg: 'En attente de traitement', progress: 0 }));
+$('btn-run').onclick = () => runBatch(S.images);
+async function runBatch(images) {
+  if (S.running || !images.length) return;
+  if (!KeyStore.key) return toast('Clé API requise', 'err');
+  const batch = images.map(img => ({ img, status: 'pending', msg: 'En attente de traitement', progress: 0 }));
   S.jobs = [...batch, ...S.jobs.filter(j => j.status === 'done' || j.status === 'failed')];
   S.running = true; S.stop = false; S.abort = new AbortController();
   $('btn-stop').classList.remove('hidden'); refreshRun(); paintJobs();
@@ -914,7 +991,7 @@ $('btn-run').onclick = async () => {
   $('btn-stop').classList.add('hidden'); refreshRun(); refreshKpis();
   engine(ok ? 'ok' : 'err', ok ? ok + ' vidéo(s) terminée(s)' : 'terminé sans résultat');
   if (ok) toast(`${ok} vidéo(s) générée(s)`, 'ok');
-};
+}
 $('btn-stop').onclick = () => { S.stop = true; S.abort?.abort(); log('Arrêt demandé', 'w'); };
 $('btn-clear-jobs').onclick = () => { S.jobs = S.jobs.filter(j => !['done', 'failed'].includes(j.status)); paintJobs(); };
 window.addEventListener('beforeunload', e => { if (S.running) { e.preventDefault(); e.returnValue = ''; } });
