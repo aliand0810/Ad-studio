@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0e1015">
+<meta name="description" content="Ad Studio Pro — génération de publicités vidéo produit 9:16 par IA">
+<title>Ad Studio Pro</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#0b0d12; --panel:#12151c; --panel-2:#181c25; --panel-3:#1f2430;
+  --border:#252b38; --border-2:#313848;
+  --ink:#e8eaf0; --ink-2:#a7adbd; --ink-3:#6b7286;
+  --accent:#ff6b35; --accent-soft:rgba(255,107,53,.12);
+  --cyan:#22c3e6; --cyan-soft:rgba(34,195,230,.12);
+  --ok:#2fbf71; --ok-soft:rgba(47,191,113,.12);
+  --warn:#f0b429; --warn-soft:rgba(240,180,41,.12);
+  --err:#ef5350; --err-soft:rgba(239,83,80,.12);
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,"Helvetica Neue",Arial,sans-serif;
+  --r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:13.5px;line-height:1.45;overflow:hidden}
+button{font-family:inherit;font-size:inherit;color:inherit}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--panel-3);border-radius:10px;border:2px solid var(--panel)}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ── Barre d'application ── */
+.appbar{height:56px;display:flex;align-items:center;gap:14px;padding:0 18px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#11141b,#0e1117)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand img{width:30px;height:30px;border-radius:8px}
+.brand-name{font-weight:700;letter-spacing:-.01em;font-size:15px}
+.brand-name span{color:var(--accent)}
+.brand-ver{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);border:1px solid var(--border-2);padding:1px 6px;border-radius:5px}
+.appbar .spacer{flex:1}
+.pill{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11.5px;padding:5px 10px;border-radius:20px;border:1px solid var(--border-2);color:var(--ink-2);background:var(--panel)}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-3)}
+.pill.ok{color:var(--ok);border-color:rgba(47,191,113,.35)} .pill.ok .dot{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.pill.warn{color:var(--warn);border-color:rgba(240,180,41,.35)} .pill.warn .dot{background:var(--warn)}
+.pill.err{color:var(--err);border-color:rgba(239,83,80,.35)} .pill.err .dot{background:var(--err)}
+.pill.busy .dot{background:var(--accent);animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.3}}
+.btn-install{display:none}
+
+/* ── Disposition ── */
+.layout{display:grid;grid-template-columns:440px 1fr;height:calc(100% - 56px)}
+.side{border-right:1px solid var(--border);overflow-y:auto;padding:14px 14px 20px;background:var(--panel)}
+.main{display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;min-width:0}
+
+/* ── Cartes ── */
+.card{background:var(--panel-2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:12px}
+.card-h{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;user-select:none}
+.card-h .num{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);width:20px}
+.card-h .t{font-size:11.5px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);flex:1}
+.card-h .tag{font-family:var(--mono);font-size:10.5px;color:var(--ink-3)}
+.card-h .chev{color:var(--ink-3);font-size:10px;transition:transform .2s}
+.card.collapsed .chev{transform:rotate(-90deg)}
+.card.collapsed .card-b{display:none}
+.card-b{padding:2px 12px 12px}
+
+.field{margin-bottom:10px}
+.field:last-child{margin-bottom:0}
+.lbl{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;color:var(--ink-3);margin-bottom:5px;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
+.lbl .v{font-family:var(--mono);color:var(--cyan);text-transform:none;letter-spacing:0;font-weight:500}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+input[type=text],input[type=password],select,textarea{width:100%;background:var(--bg);border:1px solid var(--border-2);color:var(--ink);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:13px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path fill='%236b7286' d='M0 0l5 6 5-6z'/></svg>");background-repeat:no-repeat;background-position:right 10px center;padding-right:26px}
+textarea{min-height:84px;resize:vertical;line-height:1.5}
+input[type=color]{width:100%;height:34px;background:var(--bg);border:1px solid var(--border-2);border-radius:7px;padding:3px;cursor:pointer}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.mono{font-family:var(--mono)}
+.hint{font-size:11.5px;color:var(--ink-3);margin-top:6px}
+.hint a{color:var(--cyan)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--border-2);background:var(--panel-3);border-radius:7px;padding:7px 12px;cursor:pointer;font-weight:600;font-size:12.5px;white-space:nowrap}
+.btn:hover{border-color:var(--ink-3)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--err)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:4px 9px;font-size:11.5px}
+
+/* Clé API */
+.keybox{display:flex;gap:6px}
+.keybox input{font-family:var(--mono);font-size:12.5px}
+.keystate{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;padding:7px 10px;border-radius:7px;background:var(--panel-3);color:var(--ink-2)}
+.keystate.ok{background:var(--ok-soft);color:var(--ok)}
+.keystate .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+
+/* Upload */
+.drop{border:1.5px dashed var(--border-2);border-radius:var(--r);padding:16px;text-align:center;cursor:pointer;transition:.15s;background:var(--bg)}
+.drop:hover,.drop.drag{border-color:var(--accent);background:var(--accent-soft)}
+.drop b{display:block;font-size:13px;margin-bottom:2px}
+.drop span{font-size:11.5px;color:var(--ink-3)}
+.thumbs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+.thumb{position:relative;aspect-ratio:3/4;border-radius:6px;overflow:hidden;border:1px solid var(--border-2);background:#fff}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb button{position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;border:none;background:rgba(0,0,0,.75);color:#fff;font-size:10px;cursor:pointer}
+
+/* Styles */
+.chips{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.chip{border:1px solid var(--border-2);background:var(--bg);border-radius:7px;padding:7px 8px;cursor:pointer;transition:.12s;text-align:left}
+.chip:hover{border-color:var(--ink-3)}
+.chip.sel{border-color:var(--accent);background:var(--accent-soft)}
+.chip .e{font-size:15px;line-height:1}
+.chip .n{font-size:11.5px;font-weight:600;margin-top:4px;line-height:1.2}
+.grp{grid-column:1/-1;font-family:var(--mono);font-size:10.5px;color:var(--cyan);text-transform:uppercase;letter-spacing:.08em;margin-top:6px}
+.grp:first-child{margin-top:0}
+.chips.liq{grid-template-columns:repeat(4,1fr)}
+.chips.liq .chip{text-align:center;font-size:11.5px;padding:6px 4px}
+.chips.liq .chip.sel{border-color:var(--cyan);background:var(--cyan-soft);color:var(--cyan)}
+.presets{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.presets span{font-size:11px;padding:3px 8px;border:1px solid var(--border-2);border-radius:20px;cursor:pointer;color:var(--ink-2)}
+.presets span:hover{border-color:var(--accent);color:var(--accent)}
+
+/* Interrupteur */
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:var(--bg);border:1px solid var(--border-2);border-radius:7px;cursor:pointer;margin-bottom:10px}
+.toggle .tx b{display:block;font-size:12.5px}
+.toggle .tx span{font-size:11px;color:var(--ink-3)}
+.sw{width:36px;height:20px;border-radius:20px;background:var(--border-2);position:relative;flex-shrink:0;transition:.2s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s}
+.toggle.on .sw{background:var(--accent)}
+.toggle.on .sw::after{transform:translateX(16px)}
+.toggle.cy.on .sw{background:var(--cyan)}
+
+/* Barre d'action */
+.topaction{display:flex;gap:8px;align-items:center}
+.topaction .btn{padding:9px 18px;font-size:13.5px}
+.topaction .btn.primary{min-width:280px;box-shadow:0 4px 18px rgba(255,107,53,.25)}
+.topaction .btn.primary:disabled{background:var(--panel-3);border-color:var(--border-2);color:var(--ink-2);box-shadow:none;opacity:1}
+.topaction .btn.primary.running{background:var(--accent-soft);border-color:rgba(255,107,53,.45);color:var(--accent);opacity:1}
+.topaction .btn.danger{border-color:rgba(239,83,80,.45);background:var(--err-soft)}
+
+/* ── Zone principale ── */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid var(--border)}
+.kpi{padding:12px 16px;border-right:1px solid var(--border)}
+.kpi:last-child{border-right:none}
+.kpi .k{font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+.kpi .v{font-family:var(--mono);font-size:18px;margin-top:3px;font-weight:600}
+.kpi .s{font-family:var(--mono);font-size:10.5px;color:var(--ink-3)}
+
+.workspace{display:grid;grid-template-columns:1fr 1fr;overflow:hidden;min-height:0}
+.pane{display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--border)}
+.pane:last-child{border-right:none}
+.pane-h{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--panel)}
+.pane-h .t{font-size:11.5px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);flex:1}
+.pane-b{flex:1;overflow-y:auto;padding:12px 16px}
+.empty{color:var(--ink-3);text-align:center;padding:40px 10px;font-size:12.5px}
+.empty .ic{font-size:26px;opacity:.5;margin-bottom:8px}
+
+/* Tâches */
+.job{display:grid;grid-template-columns:44px 1fr;gap:10px;padding:10px;border:1px solid var(--border);border-radius:9px;background:var(--panel-2);margin-bottom:8px}
+.job img{width:44px;height:58px;object-fit:cover;border-radius:5px;background:#fff}
+.job .top{display:flex;align-items:center;gap:8px}
+.job .nm{font-weight:600;font-size:12.5px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{font-family:var(--mono);font-size:10.5px;padding:2px 7px;border-radius:5px;border:1px solid var(--border-2);color:var(--ink-2)}
+.badge.processing{color:var(--accent);border-color:rgba(255,107,53,.4);background:var(--accent-soft)}
+.badge.waiting{color:var(--warn);border-color:rgba(240,180,41,.4);background:var(--warn-soft)}
+.badge.done{color:var(--ok);border-color:rgba(47,191,113,.4);background:var(--ok-soft)}
+.badge.failed{color:var(--err);border-color:rgba(239,83,80,.4);background:var(--err-soft)}
+.job .msg{font-family:var(--mono);font-size:11px;color:var(--ink-2);margin-top:4px;overflow-wrap:anywhere}
+.job.failed .msg{color:#ff8f8c}
+.job .meta{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);margin-top:4px;display:flex;gap:12px;flex-wrap:wrap}
+.bar{height:3px;background:var(--panel-3);border-radius:3px;margin-top:7px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .4s}
+.job.waiting .bar i{background:var(--warn)}
+.job.done .bar i{background:var(--ok);width:100%}
+
+/* Galerie */
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.vid{border:1px solid var(--border);border-radius:9px;overflow:hidden;background:#000}
+.vid video{width:100%;aspect-ratio:9/16;object-fit:cover;display:block;background:#000}
+.vid .c{padding:6px 8px;background:var(--panel-2);font-family:var(--mono);font-size:10.5px;color:var(--ink-3);display:flex;justify-content:space-between;gap:6px;align-items:center}
+.vid .c a{color:var(--cyan);text-decoration:none}
+
+/* Journal */
+.console{border-top:1px solid var(--border);background:#08090d;height:170px;display:flex;flex-direction:column}
+.console .pane-h{background:#0c0e13}
+.log{flex:1;overflow-y:auto;padding:6px 16px;font-family:var(--mono);font-size:11.5px;line-height:1.6}
+.log div{white-space:pre-wrap;overflow-wrap:anywhere}
+.log .ts{color:var(--ink-3)}
+.log .i{color:var(--ink-2)} .log .s{color:var(--ok)} .log .w{color:var(--warn)} .log .e{color:var(--err)} .log .d{color:var(--cyan)}
+
+/* Toast */
+.toast{position:fixed;bottom:22px;right:22px;background:var(--panel-3);border:1px solid var(--border-2);padding:10px 14px;border-radius:9px;font-size:12.5px;box-shadow:0 10px 30px rgba(0,0,0,.4);transform:translateY(20px);opacity:0;transition:.25s;z-index:99;max-width:420px;pointer-events:none}
+.toast.show{transform:none;opacity:1}
+.toast.ok{border-color:var(--ok)} .toast.err{border-color:var(--err)} .toast.warn{border-color:var(--warn)}
+
+@media (max-width:1100px){.workspace{grid-template-columns:1fr}.pane{border-right:none;border-bottom:1px solid var(--border)}.kpis{grid-template-columns:repeat(3,1fr)}.kpi:nth-child(n+4){display:none}}
+@media (max-width:820px){.appbar{flex-wrap:wrap;height:auto;padding:10px 14px;gap:10px}.topaction{order:5;width:100%}.topaction .btn.primary{flex:1;min-width:0}body{overflow:auto}.layout{grid-template-columns:1fr;height:auto}.side{border-right:none;overflow:visible}.main{overflow:visible}.workspace{overflow:visible}.pane-b{max-height:none}.appbar .hide-sm{display:none}}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- ═════════ Barre d'application ═════════ -->
+<header class="appbar">
+  <div class="brand">
+    <img src="icon.svg" alt="">
+    <div class="brand-name">Ad Studio <span>Pro</span></div>
+    <div class="brand-ver">v2.0</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="topaction">
+    <button class="btn primary" id="btn-run" disabled>▶ Lancer la génération</button>
+    <button class="btn danger hidden" id="btn-stop">■ Arrêter</button>
+  </div>
+  <div class="spacer"></div>
+  <div class="pill hide-sm" id="pill-api"><span class="dot"></span><span id="pill-api-t">API : non configurée</span></div>
+  <div class="pill hide-sm" id="pill-engine"><span class="dot"></span><span id="pill-engine-t">Moteur : inactif</span></div>
+  <button class="btn sm btn-install" id="btn-install">⬇ Installer l'application</button>
+</header>
+
+<div class="layout">
+<!-- ═════════ Colonne réglages ═════════ -->
+<aside class="side">
+
+  <section class="card" data-card="api">
+    <div class="card-h"><span class="num">01</span><span class="t">Connexion API</span><span class="tag" id="tag-api">—</span><span class="chev">▼</span></div>
+    <div class="card-b">
+      <div class="field">
+        <div class="lbl">Clé API Agnes AI</div>
+        <div class="keybox">
+          <input type="password" id="key-input" placeholder="sk-…" autocomplete="off" spellcheck="false">
+          <button class="btn sm ghost" id="key-eye" title="Afficher / masquer">👁</button>
+          <button class="btn sm primary" id="key-save">Enregistrer</button>
+        </div>
+        <div class="keystate" id="key-state"><span class="dot"></span><span id="key-state-t">Aucune clé enregistrée</span></div>
+        <div class="hint">La clé est mémorisée sur cet ordinateur et rechargée automatiquement à chaque ouverture. Clé gratuite : <a href="https://platform.agnes-ai.com" target="_blank" rel="noopener">platform.agnes-ai.com</a></div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <div class="lbl">Modèle vidéo</div>
+          <select id="model-mode">
+            <option value="auto">Auto (2.5 Flash → V2.0)</option>
+            <option value="agnes-video-2.5-flash">2.5 Flash uniquement</option>
+            <option value="agnes-video-v2.0">V2.0 uniquement</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="lbl">Point d'accès</div>
+          <input type="text" id="api-base" class="mono" placeholder="https://apihub.agnes-ai.com">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" data-card="retry">
+    <div class="card-h"><span class="num">02</span><span class="t">Mode patient</span><span class="tag" id="tag-retry">—</span><span class="chev">▼</span></div>
+    <div class="card-b">
+      <div class="toggle" id="t-patient">
+        <div class="tx"><b>Relance automatique illimitée</b><span>Réessaie jusqu'à obtenir une place chez Agnes, tant que l'application reste ouverte</span></div>
+        <div class="sw"></div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <div class="lbl">Intervalle</div>
+          <select id="retry-interval">
+            <option value="60">Toutes les 1 min</option>
+            <option value="90">Toutes les 1 min 30</option>
+            <option value="120">Toutes les 2 min</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="lbl">Durée max</div>
+          <select id="retry-max">
+            <option value="0">Illimitée</option>
+            <option value="3600">1 heure</option>
+            <option value="10800">3 heures</option>
+            <option value="28800">8 heures</option>
+          </select>
+        </div>
+      </div>
+      <div class="toggle" id="t-notify" style="margin-top:10px">
+        <div class="tx"><b>Notification à la fin</b><span>Alerte système + son quand une vidéo est prête</span></div>
+        <div class="sw"></div>
+      </div>
+      <div class="toggle" id="t-awake" style="margin-bottom:0">
+        <div class="tx"><b>Empêcher la mise en veille de l'écran</b><span>Recommandé pour les longues attentes</span></div>
+        <div class="sw"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" data-card="src">
+    <div class="card-h"><span class="num">03</span><span class="t">Photos produit</span><span class="tag" id="tag-src">0 image</span><span class="chev">▼</span></div>
+    <div class="card-b">
+      <div class="drop" id="drop">
+        <input type="file" id="file" accept="image/*" multiple hidden>
+        <b>Déposer des images ou cliquer pour parcourir</b>
+        <span>JPG · PNG · WebP — une vidéo par image</span>
+      </div>
+      <div class="thumbs" id="thumbs"></div>
+    </div>
+  </section>
+
+  <section class="card" data-card="style">
+    <div class="card-h"><span class="num">04</span><span class="t">Format publicitaire</span><span class="tag" id="tag-style">—</span><span class="chev">▼</span></div>
+    <div class="card-b"><div class="chips" id="styles"></div></div>
+  </section>
+
+  <section class="card" data-card="liquid">
+    <div class="card-h"><span class="num">05</span><span class="t">Moteur liquide</span><span class="tag" id="tag-liq">off</span><span class="chev">▼</span></div>
+    <div class="card-b">
+      <div class="toggle cy" id="t-liquid">
+        <div class="tx"><b>Simulation de fluide</b><span>Boissons, cosmétiques, parfums…</span></div>
+        <div class="sw"></div>
+      </div>
+      <div id="liq-ctrl" class="hidden">
+        <div class="chips liq" id="liquids"></div>
+        <div class="row" style="margin-top:10px">
+          <div class="field"><div class="lbl">Viscosité <span class="v" id="v-visc"></span></div><input type="range" id="r-visc" min="0" max="100" step="10" value="30"></div>
+          <div class="field"><div class="lbl">Éclaboussures <span class="v" id="v-splash"></span></div><input type="range" id="r-splash" min="0" max="100" step="25" value="50"></div>
+          <div class="field"><div class="lbl">Ondulations <span class="v" id="v-wave"></span></div><input type="range" id="r-wave" min="0" max="100" step="25" value="50"></div>
+          <div class="field"><div class="lbl">Réfraction <span class="v" id="v-refr"></span></div><input type="range" id="r-refr" min="0" max="100" step="25" value="75"></div>
+          <div class="field"><div class="lbl">Couleur</div><input type="color" id="liq-color" value="#4dd0e1"></div>
+          <div class="field"><div class="lbl">Bulles</div>
+            <select id="bubbles"><option value="none">Aucune</option><option value="few">Quelques-unes</option><option value="many">Effervescent</option><option value="mist">Brume</option></select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" data-card="cam">
+    <div class="card-h"><span class="num">06</span><span class="t">Caméra & rendu</span><span class="tag" id="tag-cam">—</span><span class="chev">▼</span></div>
+    <div class="card-b">
+      <div class="row">
+        <div class="field"><div class="lbl">Durée</div>
+          <select id="duration"><option value="4">4 s</option><option value="5" selected>5 s</option><option value="6">6 s</option><option value="8">8 s</option><option value="10">10 s</option><option value="12">12 s</option></select></div>
+        <div class="field"><div class="lbl">Mouvement</div>
+          <select id="camera"><option value="turntable">Turntable 360°</option><option value="orbit">Orbite</option><option value="push">Push-in</option><option value="pull">Pull-out</option><option value="rise">Montée</option><option value="handheld">Épaule</option></select></div>
+        <div class="field"><div class="lbl">Angle</div>
+          <select id="angle"><option value="hero">Hero shot</option><option value="eye">Face</option><option value="top">Plongée</option><option value="low">Contre-plongée</option></select></div>
+        <div class="field"><div class="lbl">Éclairage</div>
+          <select id="light"><option value="softbox">Softbox studio</option><option value="rim">Rim light</option><option value="dramatic">Clair-obscur</option><option value="golden">Golden hour</option><option value="neon">Néons</option></select></div>
+        <div class="field"><div class="lbl">Fond</div>
+          <select id="bg"><option value="gradient">Dégradé studio</option><option value="solid">Uni</option><option value="bokeh">Bokeh</option><option value="nature">Nature</option><option value="water">Eau / reflets</option><option value="marble">Marbre</option><option value="neon">Néon</option></select></div>
+        <div class="field"><div class="lbl">Accent</div><input type="color" id="bg-color" value="#ff6b35"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" data-card="prompt">
+    <div class="card-h"><span class="num">07</span><span class="t">Direction créative</span><span class="tag">option</span><span class="chev">▼</span></div>
+    <div class="card-b">
+      <textarea id="prompt" placeholder="Ex. : studio premium, fond dégradé sombre, rotation lente, reflets nets sur le verre…"></textarea>
+      <div class="presets" id="presets"></div>
+      <div class="field" style="margin-top:10px">
+        <button class="btn sm ghost" id="btn-preview-prompt">Voir le prompt final envoyé à l'API</button>
+      </div>
+    </div>
+  </section>
+
+</aside>
+
+<!-- ═════════ Zone de travail ═════════ -->
+<main class="main">
+  <div class="kpis">
+    <div class="kpi"><div class="k">File</div><div class="v" id="k-queue">0</div><div class="s">tâches en cours</div></div>
+    <div class="kpi"><div class="k">Terminées</div><div class="v" id="k-done">0</div><div class="s" id="k-done-s">cette session</div></div>
+    <div class="kpi"><div class="k">Tentatives</div><div class="v" id="k-tries">0</div><div class="s">appels API</div></div>
+    <div class="kpi"><div class="k">Prochain essai</div><div class="v" id="k-next">—</div><div class="s" id="k-next-s">mode patient</div></div>
+    <div class="kpi"><div class="k">Durée moy.</div><div class="v" id="k-avg">—</div><div class="s" id="k-avg-s">0 génération</div></div>
+  </div>
+
+  <div class="workspace">
+    <div class="pane">
+      <div class="pane-h"><span class="t">File de traitement</span><button class="btn sm ghost" id="btn-clear-jobs">Effacer terminées</button></div>
+      <div class="pane-b" id="jobs"><div class="empty"><div class="ic">⧗</div>Aucune tâche. Ajoutez des photos puis lancez la génération.</div></div>
+    </div>
+    <div class="pane">
+      <div class="pane-h"><span class="t">Bibliothèque vidéo</span><span class="tag mono" id="lib-count" style="font-size:11px;color:var(--ink-3)">0</span><button class="btn sm ghost" id="btn-clear-lib">Vider</button></div>
+      <div class="pane-b"><div class="gal" id="gallery"></div><div class="empty" id="gal-empty"><div class="ic">▶</div>Les vidéos générées apparaîtront ici et resteront disponibles.</div></div>
+    </div>
+  </div>
+
+  <div class="console">
+    <div class="pane-h"><span class="t">Journal technique</span><button class="btn sm ghost" id="btn-clear-log">Effacer</button></div>
+    <div class="log" id="log"></div>
+  </div>
+</main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const VERSION = '2.0.0';
+
+/* ═════════ Stockage ═════════ */
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem('adstudio_' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('adstudio_' + k, JSON.stringify(v)); } catch {} },
+  del(k) { try { localStorage.removeItem('adstudio_' + k); } catch {} }
+};
+// IndexedDB : copie de secours de la clé (survit au nettoyage partiel du localStorage)
+const IDB = (() => {
+  let dbp = null;
+  const open = () => dbp || (dbp = new Promise((res, rej) => {
+    try {
+      const r = indexedDB.open('adstudio', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('kv');
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    } catch (e) { rej(e); }
+  }));
+  const tx = async (mode, fn) => { const db = await open(); return new Promise((res, rej) => { const t = db.transaction('kv', mode); const st = t.objectStore('kv'); const q = fn(st); t.oncomplete = () => res(q && q.result); t.onerror = () => rej(t.error); }); };
+  return {
+    get: k => tx('readonly', s => s.get(k)).catch(() => undefined),
+    set: (k, v) => tx('readwrite', s => s.put(v, k)).catch(() => {}),
+    del: k => tx('readwrite', s => s.delete(k)).catch(() => {})
+  };
+})();
+const KeyStore = {
+  key: '',
+  async load() {
+    let k = LS.get('apiKey', '');
+    if (!k) { k = (await IDB.get('apiKey')) || ''; if (k) LS.set('apiKey', k); }
+    else IDB.set('apiKey', k);
+    this.key = k; return k;
+  },
+  async save(k) { this.key = k; LS.set('apiKey', k); await IDB.set('apiKey', k); },
+  async clear() { this.key = ''; LS.del('apiKey'); await IDB.del('apiKey'); }
+};
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+
+/* ═════════ Journal & toast ═════════ */
+const logEl = $('log');
+function log(msg, lvl = 'i') {
+  const d = new Date();
+  const ts = d.toTimeString().slice(0, 8);
+  const row = document.createElement('div');
+  row.innerHTML = `<span class="ts">${ts}</span> <span class="${lvl}"></span>`;
+  row.lastChild.textContent = msg;
+  logEl.appendChild(row);
+  while (logEl.children.length > 400) logEl.firstChild.remove();
+  logEl.scrollTop = logEl.scrollHeight;
+}
+let toastT;
+function toast(msg, type = '') {
+  const t = $('toast'); t.textContent = msg; t.className = 'toast show ' + type;
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+/* ═════════ Données créatives ═════════ */
+const STYLES = [
+  { cat: 'Premium' },
+  { id: 'luxury', e: '💎', n: 'Luxe minimaliste', p: 'ultra premium luxury commercial, minimalist set, sculpted lighting, slow elegant motion, crisp reflections, high-end brand film' },
+  { id: 'perfume', e: '🌸', n: 'Parfum ciné', p: 'cinematic perfume commercial, floating petals, soft haze, shallow depth of field, dreamy sensual atmosphere' },
+  { id: 'gold', e: '✨', n: 'Or & particules', p: 'golden particles floating in the air, warm glow, magical premium reveal, sparkling highlights' },
+  { cat: 'Réseaux sociaux' },
+  { id: 'punchy', e: '⚡', n: 'Punchy TikTok', p: 'energetic social media ad, fast dynamic camera moves, punchy zooms, vibrant saturated colors, scroll-stopping' },
+  { id: 'explode', e: '💥', n: 'Explosion', p: 'product hero shot with ingredients exploding around it in slow motion, dramatic burst, high-speed photography look' },
+  { id: 'levitate', e: '🪐', n: 'Lévitation', p: 'product levitating in zero gravity, gently floating and rotating, soft shadows below, surreal clean scene' },
+  { cat: 'Lifestyle' },
+  { id: 'fresh', e: '🍃', n: 'Fraîcheur', p: 'fresh natural commercial, green leaves, morning light, dew drops, organic clean feeling' },
+  { id: 'summer', e: '🧊', n: 'Été & glaçons', p: 'refreshing summer ad, ice cubes, cold condensation on the surface, bright sunlight, thirst-quenching mood' },
+  { id: 'cozy', e: '☕', n: 'Cocooning', p: 'cozy warm lifestyle commercial, soft textiles, warm lamp light, comforting intimate atmosphere' },
+  { cat: 'Tech' },
+  { id: 'neon', e: '🌃', n: 'Néon cyber', p: 'cyberpunk neon commercial, magenta and cyan rim lights, light fog, glossy reflections, futuristic' },
+  { id: 'hologram', e: '🔷', n: 'Hologramme', p: 'holographic tech reveal, glowing wireframe scan lines, 3D product reconstruction, sleek sci-fi interface' },
+  { id: 'clean', e: '⬜', n: 'Packshot pur', p: 'clean e-commerce packshot, seamless white infinity cove, even lighting, precise product rotation' }
+];
+const LIQUIDS = [
+  { id: 'water', n: '💧 Eau', visc: 10, c: '#4dd0e1', b: 'few', p: 'clear water, thin and fast-flowing' },
+  { id: 'soda', n: '🥤 Soda', visc: 10, c: '#6d3b1f', b: 'many', p: 'fizzy carbonated soda with rising bubbles' },
+  { id: 'juice', n: '🍊 Jus', visc: 30, c: '#ff9800', b: 'few', p: 'fresh fruit juice, slightly pulpy' },
+  { id: 'milk', n: '🥛 Lait', visc: 30, c: '#f5f5f5', b: 'none', p: 'creamy opaque milk splash, smooth crown splash' },
+  { id: 'coffee', n: '☕ Café', visc: 20, c: '#3e2723', b: 'mist', p: 'hot coffee with gentle steam rising' },
+  { id: 'wine', n: '🍷 Vin', visc: 30, c: '#7b1e3a', b: 'none', p: 'red wine swirling with legs on the glass' },
+  { id: 'beer', n: '🍺 Bière', visc: 20, c: '#f2b134', b: 'many', p: 'golden beer with rising bubbles and foamy head' },
+  { id: 'honey', n: '🍯 Miel', visc: 90, c: '#ffb300', b: 'none', p: 'thick golden honey drizzling slowly in ribbons' },
+  { id: 'oil', n: '🫒 Huile', visc: 60, c: '#c0ca33', b: 'none', p: 'smooth golden oil pouring with glossy surface' },
+  { id: 'cream', n: '🧴 Crème', visc: 80, c: '#fff3e0', b: 'none', p: 'thick cosmetic cream with silky swirls' },
+  { id: 'serum', n: '💄 Sérum', visc: 50, c: '#ffd6e0', b: 'few', p: 'translucent cosmetic serum drop, gel-like' },
+  { id: 'perfume', n: '🌸 Parfum', visc: 10, c: '#f8bbd0', b: 'mist', p: 'perfume liquid with a fine mist spray' }
+];
+const PRESETS = ['Rotation lente sur fond noir brillant', 'Reflets nets sur le verre', 'Gouttes de condensation', 'Fumée légère en arrière-plan', 'Contre-jour doré', 'Ralenti extrême', 'Fond pastel doux', 'Logo révélé à la fin'];
+const CAMERA = { orbit: 'camera slowly orbiting around the product', turntable: 'product rotating 360 degrees on a turntable, smooth 3D rotation', push: 'slow push-in dolly toward the product', pull: 'slow pull-out dolly revealing the product', rise: 'camera rising vertically along the product', handheld: 'subtle handheld camera movement, organic feel' };
+const ANGLE = { eye: 'eye-level angle', hero: 'slightly high hero angle', top: 'top-down overhead view', low: 'low angle looking up, heroic' };
+const BG = { gradient: 'smooth studio gradient background with subtle parallax', solid: 'clean solid color backdrop', bokeh: 'soft bokeh light background with parallax depth', nature: 'natural background with leaves and stone, parallax depth', water: 'water surface background with moving caustic reflections', marble: 'luxurious marble surface and background', neon: 'neon-lit cyber background' };
+const LIGHT = { softbox: 'soft diffused studio softbox lighting', rim: 'strong rim backlight outlining the product', dramatic: 'dramatic chiaroscuro lighting', golden: 'warm golden hour lighting', neon: 'colorful neon lighting' };
+
+/* ═════════ État ═════════ */
+const S = {
+  images: [], jobs: [],
+  style: LS.get('style', 'luxury'),
+  liquidOn: LS.get('liquidOn', false),
+  liquid: LS.get('liquid', 'water'),
+  patient: LS.get('patient', true),
+  notify: LS.get('notify', false),
+  awake: LS.get('awake', true),
+  running: false, stop: false, abort: null,
+  tries: 0, doneCount: 0, nextAt: 0,
+  library: LS.get('library', [])
+};
+
+/* ═════════ Cartes repliables ═════════ */
+const collapsed = LS.get('collapsed', ['prompt']);
+document.querySelectorAll('.card').forEach(c => {
+  const id = c.dataset.card;
+  if (collapsed.includes(id)) c.classList.add('collapsed');
+  c.querySelector('.card-h').addEventListener('click', () => {
+    c.classList.toggle('collapsed');
+    const list = [...document.querySelectorAll('.card.collapsed')].map(x => x.dataset.card);
+    LS.set('collapsed', list);
+  });
+});
+
+/* ═════════ Persistance des réglages ═════════ */
+const PERSIST = ['model-mode', 'api-base', 'retry-interval', 'retry-max', 'duration', 'camera', 'angle', 'light', 'bg', 'bg-color', 'r-visc', 'r-splash', 'r-wave', 'r-refr', 'liq-color', 'bubbles', 'prompt'];
+PERSIST.forEach(id => {
+  const el = $(id); const v = LS.get('f_' + id, null);
+  if (v !== null) el.value = v;
+  el.addEventListener('input', () => { LS.set('f_' + id, el.value); refreshTags(); });
+  el.addEventListener('change', () => { LS.set('f_' + id, el.value); refreshTags(); });
+});
+if (/api\.agnes-ai\.com|generations/.test($('api-base').value)) $('api-base').value = '';
+
+/* ═════════ Interrupteurs ═════════ */
+function bindToggle(id, key, onChange) {
+  const el = $(id);
+  const paint = () => el.classList.toggle('on', !!S[key]);
+  paint();
+  el.addEventListener('click', async () => {
+    S[key] = !S[key];
+    if (onChange) { const ok = await onChange(S[key]); if (ok === false) S[key] = false; }
+    LS.set(key, S[key]); paint(); refreshTags();
+  });
+}
+bindToggle('t-patient', 'patient', v => log('Mode patient ' + (v ? 'activé' : 'désactivé'), 'd'));
+bindToggle('t-notify', 'notify', async v => {
+  if (!v) return true;
+  if (!('Notification' in window)) { toast('Notifications non prises en charge', 'warn'); return false; }
+  const p = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
+  if (p !== 'granted') { toast('Notifications refusées par le navigateur', 'warn'); return false; }
+  return true;
+});
+bindToggle('t-awake', 'awake', v => { if (!v) releaseWake(); else if (S.running) requestWake(); });
+bindToggle('t-liquid', 'liquidOn', v => { $('liq-ctrl').classList.toggle('hidden', !v); });
+$('liq-ctrl').classList.toggle('hidden', !S.liquidOn);
+
+/* Wake Lock */
+let wake = null;
+async function requestWake() {
+  if (!S.awake || !('wakeLock' in navigator)) return;
+  try { wake = await navigator.wakeLock.request('screen'); log('Mise en veille de l\'écran bloquée', 'd'); } catch {}
+}
+function releaseWake() { if (wake) { wake.release().catch(() => {}); wake = null; } }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.running) requestWake(); });
+
+/* ═════════ Clé API ═════════ */
+function maskKey(k) { return k.length > 10 ? k.slice(0, 5) + '•'.repeat(10) + k.slice(-4) : '•'.repeat(k.length); }
+function paintKey() {
+  const k = KeyStore.key, ok = !!k;
+  $('key-state').classList.toggle('ok', ok);
+  $('key-state-t').textContent = ok ? 'Clé enregistrée et chargée automatiquement (' + maskKey(k) + ')' : 'Aucune clé enregistrée';
+  $('key-input').value = ok ? k : '';
+  $('key-input').type = 'password';
+  $('key-save').textContent = ok ? 'Mettre à jour' : 'Enregistrer';
+  $('pill-api').className = 'pill hide-sm ' + (ok ? 'ok' : 'warn');
+  $('pill-api-t').textContent = ok ? 'API : clé chargée' : 'API : clé manquante';
+  $('tag-api').textContent = ok ? '● connectée' : '○ clé requise';
+  refreshRun();
+}
+$('key-eye').addEventListener('click', () => { const i = $('key-input'); i.type = i.type === 'password' ? 'text' : 'password'; });
+$('key-save').addEventListener('click', async () => {
+  const v = $('key-input').value.trim();
+  if (!v) {
+    if (KeyStore.key && confirm('Supprimer la clé enregistrée ?')) { await KeyStore.clear(); paintKey(); log('Clé API supprimée', 'w'); toast('Clé supprimée', 'warn'); }
+    return;
+  }
+  if (v.length < 10) { toast('Clé trop courte', 'err'); return; }
+  await KeyStore.save(v); paintKey();
+  log('Clé API enregistrée (' + maskKey(v) + ')', 's'); toast('Clé enregistrée — elle sera rechargée automatiquement', 'ok');
+});
+$('key-input').addEventListener('keydown', e => { if (e.key === 'Enter') $('key-save').click(); });
+
+/* ═════════ Images ═════════ */
+const drop = $('drop'), file = $('file');
+drop.addEventListener('click', () => file.click());
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('drag'); addFiles(e.dataTransfer.files); });
+file.addEventListener('change', () => { addFiles(file.files); file.value = ''; });
+document.addEventListener('paste', e => { const f = [...(e.clipboardData?.files || [])]; if (f.length) addFiles(f); });
+
+function resize(f, max = 1280) {
+  return new Promise((res, rej) => {
+    const u = URL.createObjectURL(f), img = new Image();
+    img.onload = () => {
+      const r = Math.min(1, max / Math.max(img.width, img.height));
+      const w = Math.round(img.width * r), h = Math.round(img.height * r);
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); x.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(u); res({ dataUrl: c.toDataURL('image/jpeg', .9), w, h });
+    };
+    img.onerror = () => { URL.revokeObjectURL(u); rej(new Error('image illisible')); };
+    img.src = u;
+  });
+}
+async function addFiles(list) {
+  const fs = [...list].filter(f => f.type.startsWith('image/'));
+  for (const f of fs) {
+    try { const r = await resize(f); S.images.push({ id: crypto.randomUUID?.() || String(Math.random()), name: f.name, ...r }); log(`Image ajoutée : ${f.name} (${r.w}×${r.h})`); }
+    catch (e) { log(`${f.name} : ${e.message}`, 'e'); }
+  }
+  paintThumbs();
+}
+function paintThumbs() {
+  const g = $('thumbs'); g.innerHTML = '';
+  S.images.forEach(im => {
+    const d = document.createElement('div'); d.className = 'thumb';
+    d.innerHTML = '<img alt=""><button title="Retirer">✕</button>';
+    d.querySelector('img').src = im.dataUrl;
+    d.querySelector('button').onclick = e => { e.stopPropagation(); S.images = S.images.filter(x => x.id !== im.id); paintThumbs(); };
+    g.appendChild(d);
+  });
+  $('tag-src').textContent = S.images.length + ' image' + (S.images.length > 1 ? 's' : '');
+  refreshRun();
+}
+
+/* ═════════ Styles / liquides / presets ═════════ */
+function paintStyles() {
+  const g = $('styles'); g.innerHTML = '';
+  STYLES.forEach(s => {
+    if (s.cat) { const h = document.createElement('div'); h.className = 'grp'; h.textContent = s.cat; g.appendChild(h); return; }
+    const c = document.createElement('div'); c.className = 'chip' + (s.id === S.style ? ' sel' : '');
+    c.innerHTML = `<div class="e">${s.e}</div><div class="n">${s.n}</div>`;
+    c.onclick = () => { S.style = s.id; LS.set('style', s.id); paintStyles(); refreshTags(); };
+    g.appendChild(c);
+  });
+}
+function paintLiquids() {
+  const g = $('liquids'); g.innerHTML = '';
+  LIQUIDS.forEach(l => {
+    const c = document.createElement('div'); c.className = 'chip' + (l.id === S.liquid ? ' sel' : ''); c.textContent = l.n;
+    c.onclick = () => {
+      S.liquid = l.id; LS.set('liquid', l.id);
+      $('r-visc').value = l.visc; $('liq-color').value = l.c; $('bubbles').value = l.b;
+      ['r-visc', 'liq-color', 'bubbles'].forEach(id => LS.set('f_' + id, $(id).value));
+      paintLiquids(); refreshTags();
+    };
+    g.appendChild(c);
+  });
+}
+PRESETS.forEach(p => {
+  const s = document.createElement('span'); s.textContent = '+ ' + p;
+  s.onclick = () => { const t = $('prompt'); t.value = (t.value.trim() ? t.value.trim().replace(/[.,]?$/, '. ') : '') + p + '.'; LS.set('f_prompt', t.value); };
+  $('presets').appendChild(s);
+});
+
+const VISC = [[0, 'eau'], [20, 'fluide'], [40, 'sirop'], [60, 'huile'], [80, 'crème'], [95, 'miel']];
+const L5 = { splash: ['aucun', 'léger', 'moyen', 'fort', 'explosif'], wave: ['immobile', 'léger', 'doux', 'marqué', 'tempête'], refr: ['opaque', 'mat', 'translucide', 'réaliste', 'cristal'] };
+const lv = v => Math.round(v / 25);
+const viscLabel = v => VISC.reduce((a, [t, n]) => v >= t ? n : a, 'eau');
+
+function refreshTags() {
+  const st = STYLES.find(s => s.id === S.style);
+  $('tag-style').textContent = st ? st.n : '—';
+  $('v-visc').textContent = viscLabel(+$('r-visc').value);
+  $('v-splash').textContent = L5.splash[lv(+$('r-splash').value)];
+  $('v-wave').textContent = L5.wave[lv(+$('r-wave').value)];
+  $('v-refr').textContent = L5.refr[lv(+$('r-refr').value)];
+  $('tag-liq').textContent = S.liquidOn ? (LIQUIDS.find(l => l.id === S.liquid)?.n || 'on') : 'off';
+  $('tag-cam').textContent = $('duration').value + ' s · 9:16';
+  $('tag-retry').textContent = S.patient ? '● ' + fmtSec(+$('retry-interval').value) : 'off';
+}
+
+/* ═════════ Prompt ═════════ */
+function buildPrompt() {
+  const st = STYLES.find(s => s.id === S.style) || STYLES[1];
+  const parts = [
+    'Vertical 9:16 product advertisement video. Keep the exact product from the reference image (shape, label, colors, logo) perfectly consistent, no deformation, no text changes',
+    st.p, CAMERA[$('camera').value], ANGLE[$('angle').value],
+    BG[$('bg').value] + ', accent color ' + $('bg-color').value, LIGHT[$('light').value]
+  ];
+  if (S.liquidOn) {
+    const l = LIQUIDS.find(x => x.id === S.liquid) || LIQUIDS[0], v = +$('r-visc').value;
+    const sp = ['no splashes', 'light droplets', 'moderate splashes', 'strong splashes', 'explosive slow-motion splash'][lv(+$('r-splash').value)];
+    const wa = ['perfectly still liquid surface', 'slight ripples', 'gentle waves', 'pronounced waves', 'turbulent liquid motion'][lv(+$('r-wave').value)];
+    const rf = ['opaque liquid', 'matte liquid', 'translucent liquid', 'realistic refraction and transparency', 'crystal clear liquid with caustics'][lv(+$('r-refr').value)];
+    const bu = { none: 'no bubbles', few: 'a few droplets and bubbles', many: 'dense effervescent rising bubbles', mist: 'fine mist spray' }[$('bubbles').value];
+    parts.push(`Realistic fluid simulation: ${l.p}, liquid color ${$('liq-color').value}, viscosity ${v}/100 (${viscLabel(v)}), ${sp}, ${wa}, ${rf}, ${bu}, physically accurate fluid dynamics, glossy specular highlights`);
+  }
+  const u = $('prompt').value.trim(); if (u) parts.push('Creative direction: ' + u);
+  parts.push('High quality commercial, sharp focus, smooth motion, no watermark');
+  return parts.join('. ') + '.';
+}
+$('btn-preview-prompt').onclick = () => { log('PROMPT ▸ ' + buildPrompt(), 'd'); toast('Prompt affiché dans le journal technique'); };
+
+/* ═════════ API Agnes ═════════ */
+const M25 = 'agnes-video-2.5-flash', M20 = 'agnes-video-v2.0';
+const short = m => m === M25 ? '2.5 Flash' : 'V2.0';
+const base = () => ($('api-base').value.trim() || 'https://apihub.agnes-ai.com').replace(/\/+$/, '');
+const fmtSec = s => s >= 60 ? Math.floor(s / 60) + ' min' + (s % 60 ? ' ' + String(s % 60).padStart(2, '0') : '') : s + ' s';
+const sleep = (ms, sig) => new Promise((res, rej) => {
+  const t = setTimeout(res, ms);
+  sig && sig.addEventListener('abort', () => { clearTimeout(t); rej(new DOMException('Arrêté', 'AbortError')); }, { once: true });
+});
+
+function bodyFor(model, img) {
+  const secs = +$('duration').value;
+  if (model === M25) return { model, prompt: buildPrompt(), mode: 'keyframe', first_frame: img.dataUrl, seconds: String(Math.min(12, Math.max(4, secs))), size: '720P', aspect_ratio: '9:16', n: 1 };
+  const frames = Math.min(441, Math.round((secs * 24 - 1) / 8) * 8 + 1);
+  return { model, prompt: buildPrompt(), image: img.dataUrl, width: 768, height: 1344, num_frames: frames, frame_rate: 24 };
+}
+
+function findUrl(o) {
+  if (!o || typeof o !== 'object') return null;
+  const d = o.video_url || o.videoUrl || o.url || o.result_url || o.output_url ||
+    (typeof o.remixed_from_video_id === 'string' && /^https?:/.test(o.remixed_from_video_id) ? o.remixed_from_video_id : null);
+  if (typeof d === 'string' && /^https?:/.test(d)) return d;
+  for (const k of ['data', 'output', 'result', 'results', 'videos']) {
+    const v = o[k];
+    if (Array.isArray(v)) for (const x of v) { const u = typeof x === 'string' && /^https?:/.test(x) ? x : findUrl(x); if (u) return u; }
+    else if (v && typeof v === 'object') { const u = findUrl(v); if (u) return u; }
+  }
+  return null;
+}
+const findId = o => o && (o.video_id || o.data?.video_id || o.id || o.task_id || o.data?.id);
+const findStatus = o => String(o?.status || o?.state || o?.data?.status || '').toLowerCase();
+const findErr = o => o && (o.error?.message || (typeof o.error === 'string' && o.error) || o.message || o.detail);
+
+class ApiError extends Error { constructor(msg, status) { super(msg); this.status = status; this.retryable = status === 0 || status === 429 || status >= 500 || /full|busy|unavailable|try again/i.test(msg); } }
+
+async function api(url, opts, sig) {
+  let res;
+  S.tries++; $('k-tries').textContent = S.tries;
+  try {
+    res = await fetch(url, { ...opts, signal: sig, headers: { 'Authorization': 'Bearer ' + KeyStore.key, 'Content-Type': 'application/json' } });
+  } catch (e) {
+    if (e.name === 'AbortError') throw e;
+    throw new ApiError('réseau indisponible ou bloqué (CORS)', 0);
+  }
+  const txt = await res.text(); let j; try { j = JSON.parse(txt); } catch { j = { raw: txt }; }
+  if (!res.ok) {
+    const m = findErr(j) || txt.slice(0, 200) || res.statusText;
+    if (res.status === 401 || res.status === 403) throw new ApiError('clé API refusée (' + res.status + ')', res.status);
+    throw new ApiError('HTTP ' + res.status + ' : ' + (typeof m === 'string' ? m.replace(/\s*\(request id:[^)]*\)/, '') : JSON.stringify(m)), res.status);
+  }
+  return j;
+}
+
+/* Un cycle : un essai par modèle */
+async function tryModels(job, sig) {
+  const mode = $('model-mode').value;
+  const models = mode === 'auto' ? [M25, M20] : [mode];
+  const errs = [];
+  for (const m of models) {
+    job.model = m; setJob(job, 'processing', 'Soumission à ' + short(m) + '…');
+    try {
+      const j = await api(base() + '/v1/videos', { method: 'POST', body: JSON.stringify(bodyFor(m, job.img)) }, sig);
+      log(`[${job.img.name}] Tâche acceptée par ${short(m)} — id ${findId(j) || '?'}`, 's');
+      return { json: j, model: m };
+    } catch (e) {
+      if (e.name === 'AbortError') throw e;
+      errs.push(short(m) + ' → ' + e.message);
+      log(`[${job.img.name}] ${short(m)} : ${e.message}`, e.retryable ? 'w' : 'e');
+      if (e.status === 401 || e.status === 403) throw e;
+    }
+  }
+  const err = new Error(errs.join('  |  '));
+  err.retryable = true;
+  // Si toutes les erreurs sont non temporaires, inutile d'insister
+  err.retryable = errs.some(x => /HTTP 5\d\d|HTTP 429|full|busy|unavailable|réseau/i.test(x));
+  throw err;
+}
+
+async function runJob(job, sig) {
+  const t0 = Date.now();
+  let cycle = 0, created = null;
+  const interval = () => +$('retry-interval').value;
+  const maxDur = () => +$('retry-max').value;
+  while (!created) {
+    cycle++; job.cycle = cycle;
+    try { created = await tryModels(job, sig); }
+    catch (e) {
+      if (e.name === 'AbortError') throw e;
+      if (!e.retryable) throw e;
+      const elapsed = (Date.now() - t0) / 1000;
+      if (!S.patient && cycle >= 2) throw new Error(e.message + ' — activez le mode patient pour réessayer automatiquement');
+      if (S.patient && maxDur() && elapsed > maxDur()) throw new Error('Durée max du mode patient atteinte. Dernière erreur : ' + e.message);
+      const wait = S.patient ? interval() : 30;
+      S.nextAt = Date.now() + wait * 1000;
+      job.lastErr = e.message;
+      log(`[${job.img.name}] Serveurs saturés — nouvel essai dans ${fmtSec(wait)} (cycle ${cycle})`, 'w');
+      for (let s = wait; s > 0; s--) {
+        setJob(job, 'waiting', `Serveurs Agnes saturés · nouvel essai dans ${fmtSec(s)}`, 1 - s / wait);
+        await sleep(1000, sig);
+      }
+      S.nextAt = 0;
+    }
+  }
+  // Suivi
+  const { model } = created; let j = created.json;
+  let url = findUrl(j); if (url) return { url, model, secs: Math.round((Date.now() - t0) / 1000) };
+  const id = findId(j); if (!id) throw new Error('réponse inattendue : ' + JSON.stringify(j).slice(0, 120));
+  const pollUrl = base() + '/agnesapi?video_id=' + encodeURIComponent(id) + '&model_name=' + encodeURIComponent(model);
+  const p0 = Date.now(); let lastSt = '';
+  while (true) {
+    if (Date.now() - p0 > 30 * 60 * 1000) throw new Error('rendu trop long (> 30 min), tâche abandonnée');
+    await sleep(4000, sig);
+    try { j = await api(pollUrl, { method: 'GET' }, sig); }
+    catch (e) { if (e.name === 'AbortError') throw e; if (e.retryable) { log(`[${job.img.name}] suivi : ${e.message} — on patiente`, 'w'); continue; } throw e; }
+    const st = findStatus(j); url = findUrl(j);
+    if (st !== lastSt) { log(`[${job.img.name}] statut ${short(model)} : ${st || 'en cours'}`, 'd'); lastSt = st; }
+    if (url && (!st || /complet|succe|done|finish/.test(st))) return { url, model, secs: Math.round((Date.now() - t0) / 1000) };
+    if (/fail|error|cancel|reject/.test(st)) throw new Error(findErr(j) || 'génération échouée côté Agnes');
+    const pct = j.progress ?? j.data?.progress;
+    const p = pct == null ? null : (pct > 1 ? pct / 100 : pct);
+    setJob(job, 'processing', `Rendu ${short(model)} · ${st || 'en cours'}${p != null ? ' · ' + Math.round(p * 100) + '%' : ''} · ${fmtSec(Math.round((Date.now() - p0) / 1000))}`, p);
+  }
+}
+
+/* ═════════ File de traitement ═════════ */
+function setJob(job, status, msg, progress) {
+  job.status = status; job.msg = msg; if (progress != null) job.progress = progress;
+  const el = job.el; if (!el) return;
+  el.className = 'job ' + status;
+  const labels = { pending: 'EN ATTENTE', processing: 'TRAITEMENT', waiting: 'RELANCE', done: 'TERMINÉ', failed: 'ÉCHEC' };
+  const b = el.querySelector('.badge'); b.className = 'badge ' + status; b.textContent = labels[status];
+  el.querySelector('.msg').textContent = msg;
+  el.querySelector('.meta').innerHTML = '';
+  const meta = [];
+  if (job.model) meta.push('modèle ' + short(job.model));
+  if (job.cycle) meta.push('cycle ' + job.cycle);
+  if (job.started) meta.push('écoulé ' + fmtSec(Math.round((Date.now() - job.started) / 1000)));
+  meta.forEach(m => { const s = document.createElement('span'); s.textContent = m; el.querySelector('.meta').appendChild(s); });
+  el.querySelector('.bar i').style.width = status === 'done' ? '100%' : Math.round((job.progress || 0) * 100) + '%';
+}
+function paintJobs() {
+  const box = $('jobs'); box.innerHTML = '';
+  if (!S.jobs.length) { box.innerHTML = '<div class="empty"><div class="ic">⧗</div>Aucune tâche. Ajoutez des photos puis lancez la génération.</div>'; return; }
+  S.jobs.forEach(job => {
+    const d = document.createElement('div');
+    d.innerHTML = '<img alt=""><div><div class="top"><span class="nm"></span><span class="badge"></span></div><div class="msg"></div><div class="meta"></div><div class="bar"><i></i></div></div>';
+    d.querySelector('img').src = job.img.dataUrl;
+    d.querySelector('.nm').textContent = job.img.name;
+    job.el = d; box.appendChild(d); setJob(job, job.status, job.msg, job.progress);
+  });
+  refreshKpis();
+}
+function refreshKpis() {
+  $('k-queue').textContent = S.jobs.filter(j => ['pending', 'processing', 'waiting'].includes(j.status)).length;
+  $('k-done').textContent = S.doneCount;
+  const st = LS.get('stats', { n: 0, total: 0 });
+  $('k-avg').textContent = st.n ? fmtSec(Math.round(st.total / st.n)) : '—';
+  $('k-avg-s').textContent = st.n + ' génération' + (st.n > 1 ? 's' : '');
+}
+setInterval(() => {
+  if (S.nextAt) { const s = Math.max(0, Math.round((S.nextAt - Date.now()) / 1000)); $('k-next').textContent = fmtSec(s); $('k-next-s').textContent = 'relance automatique'; }
+  else { $('k-next').textContent = '—'; $('k-next-s').textContent = S.patient ? 'mode patient actif' : 'mode patient off'; }
+}, 1000);
+
+function refreshRun() {
+  const b = $('btn-run');
+  b.disabled = S.running || !S.images.length || !KeyStore.key;
+  b.classList.toggle('running', S.running);
+  b.textContent = S.running ? '⏳ Génération en cours…' : !KeyStore.key ? 'Clé API requise' : !S.images.length ? 'Ajoutez une photo produit' : `▶ Générer ${S.images.length} vidéo${S.images.length > 1 ? 's' : ''}`;
+}
+function engine(state, text) {
+  $('pill-engine').className = 'pill hide-sm ' + state;
+  $('pill-engine-t').textContent = 'Moteur : ' + text;
+}
+
+$('btn-run').onclick = async () => {
+  if (S.running) return;
+  const batch = S.images.map(img => ({ img, status: 'pending', msg: 'En attente de traitement', progress: 0 }));
+  S.jobs = [...batch, ...S.jobs.filter(j => j.status === 'done' || j.status === 'failed')];
+  S.running = true; S.stop = false; S.abort = new AbortController();
+  $('btn-stop').classList.remove('hidden'); refreshRun(); paintJobs();
+  engine('busy', 'en cours'); requestWake();
+  log(`Lancement : ${batch.length} vidéo(s) · modèle ${$('model-mode').value} · mode patient ${S.patient ? 'ON (' + fmtSec(+$('retry-interval').value) + ')' : 'OFF'}`, 'd');
+  let ok = 0;
+  for (const job of batch) {
+    if (S.stop) { setJob(job, 'failed', 'Annulé'); continue; }
+    job.started = Date.now();
+    try {
+      const r = await runJob(job, S.abort.signal);
+      ok++; S.doneCount++;
+      const st = LS.get('stats', { n: 0, total: 0 }); st.n++; st.total += r.secs; LS.set('stats', st);
+      setJob(job, 'done', `Vidéo prête en ${fmtSec(r.secs)}`, 1);
+      addToLibrary({ url: r.url, name: job.img.name, model: r.model, date: Date.now(), secs: r.secs });
+      log(`[${job.img.name}] ✓ Vidéo prête (${short(r.model)}, ${fmtSec(r.secs)})`, 's');
+      notifyDone(job.img.name);
+    } catch (e) {
+      const msg = e.name === 'AbortError' ? 'Annulé par l\'utilisateur' : e.message;
+      setJob(job, 'failed', msg);
+      log(`[${job.img.name}] ✗ ${msg}`, 'e');
+      if (e.status === 401 || e.status === 403) { S.stop = true; toast('Clé API refusée', 'err'); }
+    }
+    refreshKpis();
+  }
+  S.running = false; S.nextAt = 0; releaseWake();
+  $('btn-stop').classList.add('hidden'); refreshRun(); refreshKpis();
+  engine(ok ? 'ok' : 'err', ok ? ok + ' vidéo(s) terminée(s)' : 'terminé sans résultat');
+  if (ok) toast(`${ok} vidéo(s) générée(s)`, 'ok');
+};
+$('btn-stop').onclick = () => { S.stop = true; S.abort?.abort(); log('Arrêt demandé', 'w'); };
+$('btn-clear-jobs').onclick = () => { S.jobs = S.jobs.filter(j => !['done', 'failed'].includes(j.status)); paintJobs(); };
+window.addEventListener('beforeunload', e => { if (S.running) { e.preventDefault(); e.returnValue = ''; } });
+
+/* ═════════ Notifications ═════════ */
+function beep() {
+  try {
+    const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain();
+    o.connect(g); g.connect(a.destination); o.type = 'sine';
+    o.frequency.setValueAtTime(880, a.currentTime); o.frequency.setValueAtTime(1320, a.currentTime + .12);
+    g.gain.setValueAtTime(.15, a.currentTime); g.gain.exponentialRampToValueAtTime(.001, a.currentTime + .45);
+    o.start(); o.stop(a.currentTime + .45);
+  } catch {}
+}
+function notifyDone(name) {
+  if (!S.notify) return;
+  beep();
+  try { if (Notification.permission === 'granted') new Notification('Ad Studio Pro — vidéo prête', { body: name, icon: 'icon-192.png' }); } catch {}
+}
+
+/* ═════════ Bibliothèque ═════════ */
+function addToLibrary(item) { S.library.unshift(item); S.library = S.library.slice(0, 60); LS.set('library', S.library); paintLibrary(); }
+function paintLibrary() {
+  const g = $('gallery'); g.innerHTML = '';
+  $('gal-empty').classList.toggle('hidden', !!S.library.length);
+  $('lib-count').textContent = S.library.length;
+  S.library.forEach((it, i) => {
+    const d = document.createElement('div'); d.className = 'vid';
+    d.innerHTML = '<video controls loop muted playsinline preload="metadata"></video><div class="c"><span></span><a target="_blank" rel="noopener" download>⬇ MP4</a></div>';
+    const v = d.querySelector('video'); v.src = it.url;
+    v.onerror = () => { d.querySelector('.c span').textContent = 'lien expiré'; };
+    const dt = new Date(it.date);
+    d.querySelector('.c span').textContent = dt.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) + ' ' + dt.toTimeString().slice(0, 5) + ' · ' + short(it.model);
+    d.querySelector('.c span').title = it.name;
+    const a = d.querySelector('a'); a.href = it.url; a.download = it.name.replace(/\.[^.]+$/, '') + '_pub.mp4';
+    v.addEventListener('mouseenter', () => v.play().catch(() => {}));
+    v.addEventListener('mouseleave', () => v.pause());
+    g.appendChild(d);
+  });
+}
+$('btn-clear-lib').onclick = () => { if (S.library.length && confirm('Vider la bibliothèque ? (les liens seront oubliés)')) { S.library = []; LS.set('library', []); paintLibrary(); } };
+$('btn-clear-log').onclick = () => { logEl.innerHTML = ''; };
+
+/* ═════════ Installation PWA ═════════ */
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; $('btn-install').style.display = 'inline-flex'; });
+$('btn-install').onclick = async () => { if (!deferredPrompt) return; deferredPrompt.prompt(); const r = await deferredPrompt.userChoice; log('Installation : ' + r.outcome, 'd'); deferredPrompt = null; $('btn-install').style.display = 'none'; };
+window.addEventListener('appinstalled', () => { log('Application installée', 's'); toast('Ad Studio Pro installé', 'ok'); });
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+
+/* ═════════ Démarrage ═════════ */
+(async () => {
+  paintStyles(); paintLiquids(); paintThumbs(); paintLibrary(); refreshTags(); refreshKpis();
+  await KeyStore.load(); paintKey();
+  engine('', 'prêt');
+  log(`Ad Studio Pro ${VERSION} démarré · ${location.protocol === 'file:' ? 'mode fichier local' : location.host}`, 'd');
+  log(KeyStore.key ? 'Clé API chargée automatiquement (' + maskKey(KeyStore.key) + ')' : 'Aucune clé API — saisissez-la dans « Connexion API »', KeyStore.key ? 's' : 'w');
+  if (location.protocol === 'file:') log('Astuce : hébergez l\'app (ex. GitHub Pages) pour l\'installer comme application de bureau', 'i');
+})();
+})();
+</script>
+</body>
+</html>
