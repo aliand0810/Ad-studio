@@ -1,5 +1,5 @@
 // Ad Studio Pro — service worker (cache de l'application, jamais des appels API)
-const CACHE = 'adstudio-v2.0.1';
+const CACHE = 'adstudio-v2.0.0';
 const SHELL = ['./', 'index.html', 'manifest.json', 'icon.svg', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener('activate', e => {
