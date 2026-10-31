@@ -33,13 +33,14 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 ::-webkit-scrollbar-track{background:transparent}
 
 /* ── Barre d'application ── */
-.appbar{height:56px;display:flex;align-items:center;gap:14px;padding:0 18px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#11141b,#0e1117)}
+.appbar{height:56px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;padding:0 18px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#11141b,#0e1117)}
 .brand{display:flex;align-items:center;gap:10px}
 .brand img{width:30px;height:30px;border-radius:8px}
 .brand-name{font-weight:700;letter-spacing:-.01em;font-size:15px}
 .brand-name span{color:var(--accent)}
 .brand-ver{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);border:1px solid var(--border-2);padding:1px 6px;border-radius:5px}
-.appbar .spacer{flex:1}
+.appbar-right{display:flex;align-items:center;justify-content:flex-end;gap:12px;min-width:0}
+[hidden]{display:none!important}
 .pill{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11.5px;padding:5px 10px;border-radius:20px;border:1px solid var(--border-2);color:var(--ink-2);background:var(--panel)}
 .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-3)}
 .pill.ok{color:var(--ok);border-color:rgba(47,191,113,.35)} .pill.ok .dot{background:var(--ok);box-shadow:0 0 8px var(--ok)}
@@ -47,11 +48,12 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 .pill.err{color:var(--err);border-color:rgba(239,83,80,.35)} .pill.err .dot{background:var(--err)}
 .pill.busy .dot{background:var(--accent);animation:pulse 1.2s infinite}
 @keyframes pulse{50%{opacity:.3}}
-.btn-install{display:none}
+.apidot{width:12px;height:12px;border-radius:50%;background:var(--err);box-shadow:0 0 0 3px var(--err-soft);cursor:help;flex-shrink:0}
+.apidot.ok{background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft),0 0 10px var(--ok)}
 
 /* ── Disposition ── */
 .layout{display:grid;grid-template-columns:440px 1fr;height:calc(100% - 56px)}
-.side{border-right:1px solid var(--border);overflow-y:auto;padding:14px 14px 90px;background:var(--panel)}
+.side{border-right:1px solid var(--border);overflow-y:auto;padding:14px 14px 20px;background:var(--panel)}
 .main{display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;min-width:0}
 
 /* ── Cartes ── */
@@ -101,7 +103,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .drop:hover,.drop.drag{border-color:var(--accent);background:var(--accent-soft)}
 .drop b{display:block;font-size:13px;margin-bottom:2px}
 .drop span{font-size:11.5px;color:var(--ink-3)}
-.thumbs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,78px));gap:6px;margin-top:10px}
 .thumb{position:relative;aspect-ratio:3/4;border-radius:6px;overflow:hidden;border:1px solid var(--border-2);background:#fff}
 .thumb img{width:100%;height:100%;object-fit:cover}
 .thumb button{position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;border:none;background:rgba(0,0,0,.75);color:#fff;font-size:10px;cursor:pointer}
@@ -133,8 +135,12 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .toggle.cy.on .sw{background:var(--cyan)}
 
 /* Barre d'action */
-.actionbar{position:sticky;bottom:0;margin:0 -14px -90px;padding:12px 14px;background:linear-gradient(0deg,var(--panel) 70%,transparent);display:flex;gap:8px}
-.actionbar .btn.primary{flex:1;padding:11px;font-size:13.5px}
+.topaction{display:flex;gap:8px;align-items:center;justify-content:center}
+.topaction .btn{padding:9px 18px;font-size:13.5px}
+.topaction .btn.primary{min-width:280px;box-shadow:0 4px 18px rgba(255,107,53,.25)}
+.topaction .btn.primary:disabled{background:var(--panel-3);border-color:var(--border-2);color:var(--ink-2);box-shadow:none;opacity:1}
+.topaction .btn.primary.running{background:var(--accent-soft);border-color:rgba(255,107,53,.45);color:var(--accent);opacity:1}
+.topaction .btn.danger{border-color:rgba(239,83,80,.45);background:var(--err-soft)}
 
 /* ── Zone principale ── */
 .kpis{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid var(--border)}
@@ -177,6 +183,8 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .vid video{width:100%;aspect-ratio:9/16;object-fit:cover;display:block;background:#000}
 .vid .c{padding:6px 8px;background:var(--panel-2);font-family:var(--mono);font-size:10.5px;color:var(--ink-3);display:flex;justify-content:space-between;gap:6px;align-items:center}
 .vid .c a{color:var(--cyan);text-decoration:none}
+.vid .c .rm{color:var(--ink-3);margin-left:6px}.vid .c .rm:hover{color:var(--err)}
+.vid .c>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* Journal */
 .console{border-top:1px solid var(--border);background:#08090d;height:170px;display:flex;flex-direction:column}
@@ -192,7 +200,8 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .toast.ok{border-color:var(--ok)} .toast.err{border-color:var(--err)} .toast.warn{border-color:var(--warn)}
 
 @media (max-width:1100px){.workspace{grid-template-columns:1fr}.pane{border-right:none;border-bottom:1px solid var(--border)}.kpis{grid-template-columns:repeat(3,1fr)}.kpi:nth-child(n+4){display:none}}
-@media (max-width:820px){body{overflow:auto}.layout{grid-template-columns:1fr;height:auto}.side{border-right:none;overflow:visible}.main{overflow:visible}.workspace{overflow:visible}.pane-b{max-height:none}.appbar .hide-sm{display:none}}
+@media (max-width:1100px){.topaction .btn.primary{min-width:220px}.brand-ver{display:none}}
+@media (max-width:820px){.appbar{grid-template-columns:1fr auto;height:auto;padding:10px 14px;gap:10px}.topaction{grid-column:1/-1;grid-row:2}.topaction .btn.primary{flex:1;min-width:0}#pill-engine{display:none}body{overflow:auto}.layout{grid-template-columns:1fr;height:auto}.side{border-right:none;overflow:visible}.main{overflow:visible}.workspace{overflow:visible}.pane-b{max-height:none}.appbar .hide-sm{display:none}}
 .hidden{display:none!important}
 </style>
 </head>
@@ -203,12 +212,17 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   <div class="brand">
     <img src="icon.svg" alt="">
     <div class="brand-name">Ad Studio <span>Pro</span></div>
-    <div class="brand-ver">v2.0</div>
+    <div class="brand-ver">v2.1</div>
   </div>
-  <div class="spacer"></div>
-  <div class="pill hide-sm" id="pill-api"><span class="dot"></span><span id="pill-api-t">API : non configurée</span></div>
-  <div class="pill hide-sm" id="pill-engine"><span class="dot"></span><span id="pill-engine-t">Moteur : inactif</span></div>
-  <button class="btn sm btn-install" id="btn-install">⬇ Installer l'application</button>
+  <div class="topaction">
+    <button class="btn primary" id="btn-run" disabled>▶ Lancer la génération</button>
+    <button class="btn danger hidden" id="btn-stop">■ Arrêter</button>
+  </div>
+  <div class="appbar-right">
+    <div class="apidot" id="pill-api" title="API : clé manquante"></div>
+    <div class="pill" id="pill-engine"><span class="dot"></span><span id="pill-engine-t">Moteur : inactif</span></div>
+    <button class="btn sm" id="btn-install" hidden>⬇ Installer l'application</button>
+  </div>
 </header>
 
 <div class="layout">
@@ -352,10 +366,6 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     </div>
   </section>
 
-  <div class="actionbar">
-    <button class="btn primary" id="btn-run" disabled>▶ Lancer la génération</button>
-    <button class="btn danger hidden" id="btn-stop">■ Arrêter</button>
-  </div>
 </aside>
 
 <!-- ═════════ Zone de travail ═════════ -->
@@ -392,7 +402,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 (() => {
 'use strict';
 const $ = id => document.getElementById(id);
-const VERSION = '2.0.0';
+const VERSION = "2.1.0";
 
 /* ═════════ Stockage ═════════ */
 const LS = {
@@ -565,11 +575,12 @@ function paintKey() {
   $('key-input').value = ok ? k : '';
   $('key-input').type = 'password';
   $('key-save').textContent = ok ? 'Mettre à jour' : 'Enregistrer';
-  $('pill-api').className = 'pill hide-sm ' + (ok ? 'ok' : 'warn');
-  $('pill-api-t').textContent = ok ? 'API : clé chargée' : 'API : clé manquante';
+  $('pill-api').className = 'apidot' + (ok ? ' ok' : '');
+  $('pill-api').title = ok ? 'API : clé chargée' : 'API : clé manquante — cliquez pour la saisir';
   $('tag-api').textContent = ok ? '● connectée' : '○ clé requise';
   refreshRun();
 }
+$('pill-api').addEventListener('click', () => { const c = document.querySelector('[data-card=api]'); c.classList.remove('collapsed'); c.scrollIntoView({ behavior: 'smooth' }); $('key-input').focus(); });
 $('key-eye').addEventListener('click', () => { const i = $('key-input'); i.type = i.type === 'password' ? 'text' : 'password'; });
 $('key-save').addEventListener('click', async () => {
   const v = $('key-input').value.trim();
@@ -863,6 +874,7 @@ setInterval(() => {
 function refreshRun() {
   const b = $('btn-run');
   b.disabled = S.running || !S.images.length || !KeyStore.key;
+  b.classList.toggle('running', S.running);
   b.textContent = S.running ? '⏳ Génération en cours…' : !KeyStore.key ? 'Clé API requise' : !S.images.length ? 'Ajoutez une photo produit' : `▶ Générer ${S.images.length} vidéo${S.images.length > 1 ? 's' : ''}`;
 }
 function engine(state, text) {
@@ -931,13 +943,24 @@ function paintLibrary() {
   $('lib-count').textContent = S.library.length;
   S.library.forEach((it, i) => {
     const d = document.createElement('div'); d.className = 'vid';
-    d.innerHTML = '<video controls loop muted playsinline preload="metadata"></video><div class="c"><span></span><a target="_blank" rel="noopener" download>⬇ MP4</a></div>';
+    d.innerHTML = '<video controls loop muted playsinline preload="metadata"></video><div class="c"><span></span><span class="acts"><a href="#" class="dl" title="Télécharger">⬇ MP4</a> <a href="#" class="rm" title="Retirer">✕</a></span></div>';
     const v = d.querySelector('video'); v.src = it.url;
     v.onerror = () => { d.querySelector('.c span').textContent = 'lien expiré'; };
     const dt = new Date(it.date);
     d.querySelector('.c span').textContent = dt.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) + ' ' + dt.toTimeString().slice(0, 5) + ' · ' + short(it.model);
     d.querySelector('.c span').title = it.name;
-    const a = d.querySelector('a'); a.href = it.url; a.download = it.name.replace(/\.[^.]+$/, '') + '_pub.mp4';
+    const fname = it.name.replace(/\.[^.]+$/, '') + '_pub.mp4';
+    d.querySelector('.dl').onclick = async ev => {
+      ev.preventDefault();
+      try {
+        const r = await fetch(it.url); if (!r.ok) throw new Error('HTTP ' + r.status);
+        const blob = await r.blob(), u = URL.createObjectURL(blob);
+        const x = document.createElement('a'); x.href = u; x.download = fname; document.body.appendChild(x); x.click(); x.remove();
+        setTimeout(() => URL.revokeObjectURL(u), 5000);
+        log('Téléchargé : ' + fname, 's');
+      } catch { window.open(it.url, '_blank', 'noopener'); log('Téléchargement direct bloqué — vidéo ouverte dans un onglet (clic droit › Enregistrer)', 'w'); }
+    };
+    d.querySelector('.rm').onclick = ev => { ev.preventDefault(); S.library.splice(i, 1); LS.set('library', S.library); paintLibrary(); };
     v.addEventListener('mouseenter', () => v.play().catch(() => {}));
     v.addEventListener('mouseleave', () => v.pause());
     g.appendChild(d);
@@ -948,9 +971,25 @@ $('btn-clear-log').onclick = () => { logEl.innerHTML = ''; };
 
 /* ═════════ Installation PWA ═════════ */
 let deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; $('btn-install').style.display = 'inline-flex'; });
-$('btn-install').onclick = async () => { if (!deferredPrompt) return; deferredPrompt.prompt(); const r = await deferredPrompt.userChoice; log('Installation : ' + r.outcome, 'd'); deferredPrompt = null; $('btn-install').style.display = 'none'; };
-window.addEventListener('appinstalled', () => { log('Application installée', 's'); toast('Ad Studio Pro installé', 'ok'); });
+const installBtn = $('btn-install');
+const inAppWindow = () => ['standalone', 'minimal-ui', 'fullscreen', 'window-controls-overlay'].some(m => matchMedia(`(display-mode: ${m})`).matches) || navigator.standalone === true;
+function showInstall(show) { installBtn.hidden = !show || inAppWindow(); }
+showInstall(false);
+window.addEventListener('beforeinstallprompt', e => {
+  // Chrome/Edge ne déclenchent cet évènement que si l'app N'EST PAS installée
+  e.preventDefault(); deferredPrompt = e; showInstall(true);
+});
+installBtn.onclick = async () => {
+  if (!deferredPrompt) { showInstall(false); return; }
+  deferredPrompt.prompt();
+  const r = await deferredPrompt.userChoice; deferredPrompt = null;
+  log('Installation : ' + (r.outcome === 'accepted' ? 'acceptée' : 'annulée'), 'd');
+  showInstall(false);
+};
+window.addEventListener('appinstalled', () => { deferredPrompt = null; showInstall(false); log('Application installée', 's'); toast('Ad Studio Pro installé', 'ok'); });
+// Si l'app est déjà installée, on masque définitivement le bouton
+if (navigator.getInstalledRelatedApps) navigator.getInstalledRelatedApps().then(a => { if (a.length) showInstall(false); }).catch(() => {});
+matchMedia('(display-mode: standalone)').addEventListener?.('change', () => showInstall(false));
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 
 /* ═════════ Démarrage ═════════ */
